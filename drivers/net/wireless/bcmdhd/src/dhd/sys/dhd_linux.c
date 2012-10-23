@@ -694,12 +694,12 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 #endif
 
 			/* disable pkt filter */
-			if (dhd_pkt_filter_enable && !dhd->dhcp_in_progress) {
+			/*if (dhd_pkt_filter_enable && !dhd->dhcp_in_progress) {
 				int i;
 				for (i = 0; i < dhd->pktfilter_count; i++)
 					dhd_pktfilter_offload_enable(dhd, dhd->pktfilter[i],
 						0, dhd_master_mode);
-			}
+			}*/
 #ifdef PASS_ALL_MCAST_PKTS
 			allmulti = 1;
 			bcm_mkiovar("allmulti", (char *)&allmulti, 4, iovbuf, sizeof(iovbuf));
@@ -3814,33 +3814,11 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	}
 #endif /* ARP_OFFLOAD_SUPPORT */
 
-#ifdef PKT_FILTER_SUPPORT
-	/* Setup defintions for pktfilter , enable in suspend */
-	dhd->pktfilter_count = 4;
-#ifdef GAN_LITE_NAT_KEEPALIVE_FILTER
-	/* Setup filter to block broadcast and NAT Keepalive packets */
-	dhd->pktfilter[0] = "100 0 0 0 0xffffff 0xffffff"; /* discard all broadcast packets */
-	dhd->pktfilter[1] = "102 0 0 36 0xffffffff 0x11940009"; /* discard NAT Keepalive packets */
-	dhd->pktfilter[2] = "104 0 0 38 0xffffffff 0x11940009"; /* discard NAT Keepalive packets */
-	dhd->pktfilter[3] = NULL;
-#else
-	/* Setup filter to allow only unicast */
-#if defined(CUSTOMER_HW_SAMSUNG)
-	dhd->pktfilter_count = 5;
-	dhd->pktfilter[0] = "100 0 0 0 "
-		HEX_PREF_STR UNI_FILTER_STR ZERO_ADDR_STR ETHER_TYPE_STR IPV6_FILTER_STR
-		" "
-		HEX_PREF_STR ZERO_ADDR_STR ZERO_ADDR_STR ETHER_TYPE_STR ZERO_TYPE_STR;
-		dhd->pktfilter[4] = "104 0 0 0 0xFFFFFF 0x01005E";
-		/* customer want to get IPV4 multicast packets */
-#else
-#error Customer want to filter out all IPV6 packets
-	dhd->pktfilter[0] = "100 0 0 0 0x01 0x00";
-#endif
-	dhd->pktfilter[1] = NULL;
-	dhd->pktfilter[2] = NULL;
-	dhd->pktfilter[3] = NULL;
-#endif /* GAN_LITE_NAT_KEEPALIVE_FILTER */
+    dhd->pktfilter_count = 1;
+
+    dhd->pktfilter[0] = "100 0 0 0 0x010000000000000000000000000020 0x000000000000000000000000000000";
+
+
 #if defined(SOFTAP)
 	if (ap_fw_loaded) {
 		int i;
@@ -3856,7 +3834,6 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 		for (i = 0; i < dhd->pktfilter_count; i++)
 			dhd_pktfilter_offload_set(dhd, dhd->pktfilter[i]);
 	}
-#endif /* PKT_FILTER_SUPPORT */
 
 #ifdef VLAN_MODE_OFF
 	bcm_mkiovar("vlan_mode", (char *)&vlanmode, 4, iovbuf, sizeof(iovbuf));
